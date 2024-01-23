@@ -8,7 +8,7 @@ screen_width = 600
 screen_height = 720
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_mode((screen_width , screen_height))
-pygame.display.set_caption("Jumpking By Orensi")  #게임 이름
+pygame.display.set_caption("null")  #게임 이름
 
 current_path = os.path.dirname(__file__) # 상대경로 설정
 
@@ -35,7 +35,14 @@ def imageload(src, type="png"):
 # 블록 로딩
 
 blocks_img = {
-    1 : imageload('block_1_0')
+    1 : imageload('block_1_0'),
+    2 : imageload('block_2'),
+
+
+
+
+
+    51 : imageload('block_51')
 }
 
 
@@ -45,6 +52,14 @@ backgrounds_img = {
     3 : imageload('background_03_underground', 'jpg'),
     4 : imageload('background_04_underground', 'jpg'),
     5 : imageload('background_05_underground', 'jpg'),
+    6 : imageload('background_06_underground', 'jpg'),
+    7 : imageload('background_06_underground', 'jpg'),
+    8 : imageload('background_06_underground', 'jpg'),
+    9 : imageload('background_06_underground', 'jpg'),
+    10 : imageload('background_06_underground', 'jpg'),
+    11 : imageload('background_06_underground', 'jpg'),
+    12 : imageload('background_06_underground', 'jpg'),
+    13 : imageload('background_06_underground', 'jpg')
 
 
 }
@@ -56,7 +71,7 @@ backgrounds_img = {
 
 
 
-character_xpos = 0
+character_xpos = 200
 character_ypos = screen_height - 120
 tox = 0
 toy = 0
@@ -94,6 +109,8 @@ acceleration = 0
 
 
 
+
+
 # 중요 : [xpos, ypos , designtype]
 map_data = {
     1 : [[100, 600, 1  ], [300, 400, 1], [400,200,1], [100, 150, 1]],
@@ -105,6 +122,22 @@ map_data = {
     4 : [[300, 700, 1], [300, 400, 1], [300, 100, 1],  [570, 220, 1],],
 
     5 : [[300, 700, 1],  [300, 100, 1],  [540, 220, 1], [100, 420, 1]],
+
+    6 : [[300, 700, 2],  [310, 400, 2],  [320, 100, 2], [-10, 100, 2]],
+
+    7 : [[90, 600, 2], [130, 500, 2], [340,400,2],  [500, 240, 2], [500, 81, 2]],
+
+    8 : [ [400, 300, 2], [400, 450, 2], [590, 145, 1]],
+
+    9 : [[444, 456, 1], [222, 222, 2], [111, 111, 1]],
+
+    10 : [[444, 456, 1], [222, 222, 2], [111, 111, 1], [500, 300, 51]],
+
+    11 : [ [300, 430, 51], [120, 270, 51],  [400, 120, 51]],
+
+    12 : [ [480, 680, 2],[300, 540, 1] , [0, 530, 51], [0, 470, 51], [0, 410, 51], [0, 350, 51], [50,680,2], [55, 300, 2], [300, 240, 1], [590, 160, 51]],
+
+    13 : [[0,0,1]]
 
     
 
@@ -188,19 +221,35 @@ def jump_charge_blit():
 
 
 
+def stage_change_setting():
+    global stage, acceleration, earth_gravity
 
+    if(stage == 12):
+        earth_gravity = 9.8 + 4.9
+
+    else:
+        earth_gravity = 9.8
+        
 
 
 
 
 
 def change_stage(plusminus):
-    global stage
+    global stage, earth_gravity
     if(plusminus == 1):
         stage += 1
 
+
+
+
+
+
+
+
     elif(plusminus == -1):
         stage -= 1
+    stage_change_setting()
 
 
 
@@ -278,10 +327,48 @@ def check_collision():
         
  
         if((character_rect.colliderect(block_rect) and (character_rect.bottom <= block_rect.top + 10)) ):
-            block_touched = True
-            acceleration = 0
-            if(character_rect.bottom > block_rect.top):
-                character_ypos = block_rect.top - 80
+          
+            if(current_map_data[2] <= 50):
+
+                block_touched = True
+                acceleration = 0
+                if(character_rect.bottom > block_rect.top):
+                    character_ypos = block_rect.top - 80
+            
+            elif(current_map_data[2] == 51):
+
+                if(acceleration < 2):
+
+                    acceleration = 2
+                
+
+
+
+
+        elif(character_rect.colliderect(block_rect) and (character_rect.top <= block_rect.bottom -5)):
+            if(current_map_data[2] <= 50):
+
+            
+            
+            
+                if(acceleration > 0 ):
+
+                    acceleration -= 1.6
+                character_ypos += 5
+
+            elif(current_map_data[2] == 51):
+
+                if(acceleration < 1.5):
+
+                
+                
+                    character_ypos -= 5
+
+                    acceleration += 0.1
+
+                # if(acceleration > 0.9):
+
+                #     acceleration -= 0.1
              
 
         else:
@@ -358,18 +445,23 @@ while running:
         if(event.type == pygame.KEYUP):
 
             if(event.key == pygame.K_SPACE):
+                #
+
+
                 check_collision()
-                print(is_character_jumping)
-                print(character_fixed)
+         
                 if(character_fixed or not is_character_jumping):
 
                     is_jump_charging = False
 
                     is_character_jumping = True
                     character_fixed = False
-                    acceleration = jump_charged * 0.06
+                    acceleration = jump_charged ** 0.5 * 0.45
                     jump_charged = 0
                     character_ymove()
+
+                else:
+                    jump_charged  = 0
 
             if(event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT):
                 move_character_x(0)
@@ -440,7 +532,7 @@ while running:
 
     
     screen.blit(font.render('Stage {}'.format(stage), True, (0,255,0)), (0,0))
-    screen.blit(font.render('{:.2}%'.format((stage-1) / 99 * 100), True, (0,255,0)), (0,40))
+    screen.blit(font.render('{}%'.format((stage-1)  ), True, (0,255,0)), (0,40))
 
 
 

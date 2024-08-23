@@ -8,7 +8,7 @@ screen_width = 600
 screen_height = 720
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_mode((screen_width , screen_height))
-pygame.display.set_caption("null")  #게임 이름
+pygame.display.set_caption("JumpQueen")  #게임 이름
 
 current_path = os.path.dirname(__file__) # 상대경로 설정
 
@@ -37,12 +37,14 @@ def imageload(src, type="png"):
 blocks_img = {
     1 : imageload('block_1_0'),
     2 : imageload('block_2'),
+    3 : imageload('block_3'),
 
 
 
 
 
-    51 : imageload('block_51')
+    51 : imageload('block_51'),
+
 }
 
 
@@ -75,7 +77,7 @@ backgrounds_img = {
 
 
 
-character_xpos = 200
+character_xpos = 50
 character_ypos = screen_height - 120
 tox = 0
 toy = 0
@@ -101,11 +103,17 @@ super_activated = False
 super_cooldown = 0
 
 
+wind_exist = False
+wind_direction = 0
+
+
+
+
 
 
 # 스테이지
 
-stage = 10
+stage = 12
 
 
 
@@ -146,11 +154,11 @@ map_data = {
 
     11 : [ [300, 430, 51], [120, 270, 51],  [400, 120, 51]],
 
-    12 : [ [480, 680, 2],[300, 540, 1] , [0, 530, 51], [0, 470, 51], [0, 410, 51], [0, 350, 51], [50,680,2], [55, 300, 2], [300, 240, 1], [590, 160, 51]],
+    12 : [ [480, 680, 2],[300, 540, 1] , [0, 530, 51], [0, 470, 51], [0, 410, 51], [0, 350, 51], [50,680,2], [55, 300, 2], [300, 240, 1], [590, 160, 51], [590, 80, 51]],
 
-    13 : [[0,0,1], [500, 500, 2], [100, 340, 1], [100, 220, 51] ],
+    13 : [[0,0,1], [500, 600, 2], [100, 340, 1], [300, 600, 1], [590, 660, 51] ],
 
-    14 : []
+    14 : [[0, 670, 1], [385, 465, 2]]
 
     
 
@@ -235,7 +243,7 @@ def jump_charge_blit():
 
 
 def stage_change_setting():
-    global stage, acceleration, earth_gravity
+    global stage, acceleration, earth_gravity, wind_exist, wind_direction
 
     if(stage == 12):
         earth_gravity = 9.8 + 4.9
@@ -244,6 +252,23 @@ def stage_change_setting():
         earth_gravity = 9.8
         
 
+
+
+    if(stage == 13):
+        wind_exist = True
+
+        wind_direction = 1
+
+    elif(stage == 10):
+        wind_exist = True
+
+        wind_direction = 0.2
+
+
+
+
+    else:
+        wind_exist = False
 
 
 
@@ -262,6 +287,9 @@ def change_stage(plusminus):
 
     elif(plusminus == -1):
         stage -= 1
+
+
+
     stage_change_setting()
 
 
@@ -407,7 +435,11 @@ def check_collision():
 
 
             
+def environment_effect():
+    global character_xpos, wind_exist, wind_direction
 
+    if(wind_exist == True):
+        character_xpos += wind_direction * 0.04
         
         
 
@@ -417,7 +449,7 @@ def check_collision():
 
 
 
-
+clock = pygame.time.Clock()
 
 
 
@@ -438,6 +470,8 @@ Clock = pygame.time.Clock()
 # 메인 루프
 running = True
 while running:
+
+    clock.tick(540)
     
     
     for event in pygame.event.get():
@@ -502,6 +536,9 @@ while running:
                 if(randint(0, 10) == 8):
                     jump_charged -= 1
             
+        
+        if(event.type == pygame.MOUSEBUTTONDOWN):
+            print(pygame.mouse.get_pos())
             
 
 
@@ -531,7 +568,9 @@ while running:
     character_ymove()
 
 
+    # 추가 처리
 
+    environment_effect()
 
 
 
@@ -545,7 +584,39 @@ while running:
 
     
     screen.blit(font.render('Stage {}'.format(stage), True, (0,255,0)), (0,0))
-    screen.blit(font.render('{}%'.format((stage-1)  ), True, (0,255,0)), (0,40))
+    screen.blit(font.render('Time : 01:00', True, (0,255,0)), (0,40))
+
+    if(wind_exist):
+        if(wind_direction > 0):
+
+            if(wind_direction < 0.5):
+
+                screen.blit(font.render('Wind : >', True, (150, 150,0)), (0,120))
+
+            elif(wind_direction <= 1.5):
+                screen.blit(font.render('Wind : >>', True, (200,200,0)), (0,120))
+
+            else:
+                screen.blit(font.render('Wind : >>>', True, (255,0,0)), (0,120))
+
+
+
+
+        if(wind_direction < 0):
+
+
+            if(wind_direction > -0.5):
+
+                screen.blit(font.render('Wind : <', True, (150, 150,0)), (0,120))
+
+            elif(wind_direction >= -1.5):
+                screen.blit(font.render('Wind : <<', True, (200,200,0)), (0,120))
+
+            else:
+                screen.blit(font.render('Wind : <<<', True, (255,0,0)), (0,120))
+
+
+            # screen.blit(font.render('Wind : <<', True, (255,255,0)), (0,120))
 
 
 

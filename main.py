@@ -102,13 +102,15 @@ super_activated = False
 
 super_cooldown = 0
 
-
+#바람
 wind_exist = False
 wind_direction = 0
 
+# 얼음(밟으면 깨짐)
+iceblock_cooldown = 0
+iceblock_exist = True
 
-
-
+iceblock_touched = False
 
 
 # 스테이지
@@ -116,7 +118,7 @@ wind_direction = 0
 stage = 12
 
 
-
+time = 90
 
 # 중력 가속도
 
@@ -125,6 +127,18 @@ earth_gravity = 9.8 # 9.8m/s^2
 start_acceleration = 0
 acceleration = 0
 
+# 궁극기
+ultimate_exist = False
+ultimate_cooldown = 0
+
+ultimate_available = [15, 18, 20]
+
+
+
+stage_5_added = False
+stage_10_added = False
+stage_15_added = False
+stage_20_added = False
 
 
 
@@ -158,7 +172,13 @@ map_data = {
 
     13 : [[0,0,1], [500, 600, 2], [100, 340, 1], [300, 600, 1], [590, 660, 51] ],
 
-    14 : [[0, 670, 1], [385, 465, 2]]
+    14 : [[0, 670, 1], [214, 407, 3], [206, 142, 3]],
+
+    15 : [[0, 680, 1], [270, 160, 3]],
+
+    16 : [[500, 540, 2], [269, 425, 1], [85, 263, 3]],
+
+    17 : []
 
     
 
@@ -244,6 +264,7 @@ def jump_charge_blit():
 
 def stage_change_setting():
     global stage, acceleration, earth_gravity, wind_exist, wind_direction
+    global stage_10_added, stage_5_added, stage_15_added, stage_20_added, time
 
     if(stage == 12):
         earth_gravity = 9.8 + 4.9
@@ -264,11 +285,42 @@ def stage_change_setting():
 
         wind_direction = 0.2
 
+    elif(stage == 14):
+        wind_exist = True
+
+        wind_direction = -1.5
+
+    elif(stage == 15):
+        wind_exist = True
+        wind_direction = 0.2
+
+    elif(stage == 16):
+        wind_exist = True
+        wind_direction = 2
+
 
 
 
     else:
         wind_exist = False
+
+
+    if(stage == 5 and stage_5_added == False):
+
+        stage_5_added = True
+        time += 40
+    if(stage == 10 and stage_10_added == False):
+
+        stage_10_added = True
+        time += 60
+
+    if(stage == 15 and stage_15_added == False):
+
+        stage_15_added = True
+        time += 80
+          
+        
+
 
 
 
@@ -316,14 +368,19 @@ def move_character_x(movetype):
 
 
 def blocks_blit():
-    global stage, blocks_img, map_data, screen
+    global stage, blocks_img, map_data, screen, iceblock_cooldown, iceblock_exist
 
     for i in range(len(map_data[stage])):
        
         current_map_data = map_data[stage][i]
         
+        if(current_map_data[2] == 3 and iceblock_exist == False):
+            screen.blit(font.render('{}'.format(iceblock_cooldown),True,(0,255,0)), (current_map_data[0], current_map_data[1]))
 
-        screen.blit(blocks_img[current_map_data[2]], (current_map_data[0], current_map_data[1]))
+
+        else:
+
+            screen.blit(blocks_img[current_map_data[2]], (current_map_data[0], current_map_data[1]))
 
         # 중요 : [xpos, ypos, designtype]
 
@@ -342,7 +399,7 @@ def check_xpos():
 def check_collision():
 
     global character, character_xpos, character_ypos, blocks_img, map_data, stage, is_character_jumping
-    global character_fixed, acceleration, canjump
+    global character_fixed, acceleration, canjump, iceblock_cooldown, iceblock_exist, iceblock_touched
     
   
 
@@ -369,13 +426,34 @@ def check_collision():
  
         if((character_rect.colliderect(block_rect) and (character_rect.bottom <= block_rect.top + 10)) ):
           
-            if(current_map_data[2] <= 50):
+            if(current_map_data[2] <= 2):
 
                 block_touched = True
                 acceleration = 0
                 if(character_rect.bottom > block_rect.top):
                     character_ypos = block_rect.top - 80
             
+
+            elif(current_map_data[2] == 3 and iceblock_exist):
+
+                block_touched = True
+                acceleration = 0
+                if(character_rect.bottom > block_rect.top):
+                    character_ypos = block_rect.top - 80
+                # 보정 끝난 후 타이머
+
+
+                if(iceblock_touched == False):
+                    iceblock_touched = True
+
+                    pygame.time.set_timer(pygame.USEREVENT + 3, 1500, 1)
+
+
+
+
+
+
+
             elif(current_map_data[2] == 51):
 
                 if(acceleration < 2):
@@ -466,6 +544,8 @@ pygame.time.set_timer(pygame.USEREVENT + 2, 10, -1)
 Clock = pygame.time.Clock()
 
 
+pygame.time.set_timer(pygame.USEREVENT + 6, 3000, 1)
+
 
 # 메인 루프
 running = True
@@ -487,6 +567,15 @@ while running:
                 move_character_x(-1)
             if(event.key == pygame.K_RIGHT):
                 move_character_x(1)
+            
+            if(event.key == pygame.K_v and stage in ultimate_available):
+                # 궁극기
+                if(ultimate_cooldown <= 0):
+                    
+                    acceleration = 50 ** 0.5 * 0.45
+
+                    ultimate_cooldown = 30
+                    pygame.time.set_timer(pygame.USEREVENT + 5, 1000, 1)
 
         
         if(event.type == pygame.KEYUP):
@@ -501,7 +590,9 @@ while running:
 
                     is_jump_charging = False
 
-                    is_character_jumping = True
+                    ultimate_cooldown -= 1
+
+                    is_character_jumping = True 
                     character_fixed = False
                     acceleration = jump_charged ** 0.5 * 0.45
                     jump_charged = 0
@@ -512,6 +603,9 @@ while running:
 
             if(event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT):
                 move_character_x(0)
+            
+
+
 
 
 
@@ -535,7 +629,36 @@ while running:
             if(is_jump_charging and jump_charged < 50 and not pushed_jump and jump_charged > 30):
                 if(randint(0, 10) == 8):
                     jump_charged -= 1
-            
+
+        if(event.type == pygame.USEREVENT + 3):
+            iceblock_exist = False
+            iceblock_cooldown = 4
+
+            pygame.time.set_timer(pygame.USEREVENT + 4, 1000, 1)
+        
+        if(event.type == pygame.USEREVENT + 4):
+            if(iceblock_cooldown <= 1):
+                iceblock_cooldown = 0
+                iceblock_exist = True
+                iceblock_touched = False
+            else:
+                iceblock_cooldown -= 1
+                pygame.time.set_timer(pygame.USEREVENT + 4, 1000, 1)
+
+        if(event.type == pygame.USEREVENT + 5):
+            # 궁극기 쿨다운 -
+            if(ultimate_cooldown >= 1):
+                ultimate_cooldown -= 1
+                pygame.time.set_timer(pygame.USEREVENT + 5, 1000, 1)
+            else:
+                ultimate_exist = True
+                ultimate_cooldown = 0
+        
+        if(event.type == pygame.USEREVENT + 6):
+            if(time > 0):
+                time -= 1
+                pygame.time.set_timer(pygame.USEREVENT + 6, 1000, 1)
+
         
         if(event.type == pygame.MOUSEBUTTONDOWN):
             print(pygame.mouse.get_pos())
@@ -584,7 +707,24 @@ while running:
 
     
     screen.blit(font.render('Stage {}'.format(stage), True, (0,255,0)), (0,0))
-    screen.blit(font.render('Time : 01:00', True, (0,255,0)), (0,40))
+   
+    if(time >= 30):
+   
+   
+        screen.blit(font.render(' {:01} : {:02}'.format(time//60, time%60), True, (0,255,0)), (0,40))
+
+    if(time < 30 and time >= 11):
+
+        screen.blit(font.render(' {:01} : {:02}'.format(time//60, time%60), True, (255,255,0)), (0,40))
+
+    if(time < 11):
+
+        screen.blit(font.render(' {:01} : {:02}'.format(time//60, time%60), True, (255,0,0)), (0,40))
+
+    
+
+
+
 
     if(wind_exist):
         if(wind_direction > 0):
@@ -619,7 +759,12 @@ while running:
             # screen.blit(font.render('Wind : <<', True, (255,255,0)), (0,120))
 
 
-
+    if(stage in ultimate_available):
+        # 궁극기
+        if(ultimate_cooldown <= 0):
+            screen.blit(font.render('Ultimate : V', True, (0,255,0)), (0,160))
+        else:
+            screen.blit(font.render('Ultimate : {}s'.format(ultimate_cooldown), True, (255,255,0)), (0,160))
     
     
     jump_charge_blit()
